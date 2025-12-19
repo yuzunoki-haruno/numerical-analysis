@@ -52,7 +52,7 @@ TERM_MATRIX_3X3 = np.array(
 class Fem1d:
     """A class of one-dimensional finite element method (1D-FEM).
 
-    Using this class, boundary value problems for ordinary differential equations can be discretised using the 1D-FEM.
+    Using this class, boundary value problems for ordinary differential equations can be discretized using the 1D-FEM.
     It can handle both 1st-order and 2nd-order elements as input mesh data.
 
     """
@@ -127,7 +127,7 @@ class Fem1d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        local_index = _get_dilichlet_indexes(self.mesh.conditions)
+        local_index = _get_dirichlet_indexes(self.mesh.conditions)
         global_index = [self.mesh.boundary_nodes[i] for i in local_index]
         d = np.zeros_like(rhs)
         d[global_index] = values[global_index]
@@ -150,7 +150,7 @@ class Fem1d:
             rhs[i] += self.mesh.normals[m] * values[i]
 
 
-def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_materix: NDArray) -> None:
+def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_matrix: NDArray) -> None:
     """Update the global matrix with the local matrix.
 
     Argument `matrix` will be overwritten with the results after updating by the local matrix.
@@ -158,14 +158,14 @@ def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_ma
     Args:
         matrix (lil_matrix): global matrix.
         indexes (tuple[int, ...]): global node numbers of the local matrix.
-        local_materix (NDArray): local matrix.
+        local_matrix (NDArray): local matrix.
     """
     row_idx = np.vstack((indexes,) * len(indexes)).T.flatten()
     col_idx = np.hstack((indexes,) * len(indexes))
-    matrix[row_idx, col_idx] += local_materix
+    matrix[row_idx, col_idx] += local_matrix
 
 
-def _get_dilichlet_indexes(conditions: tuple[Condition, Condition]) -> tuple[int, ...]:
+def _get_dirichlet_indexes(conditions: tuple[Condition, Condition]) -> tuple[int, ...]:
     """Get the indexes of the boundary node to the Dirichlet condition.
 
     Args:

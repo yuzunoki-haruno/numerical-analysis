@@ -51,7 +51,7 @@ class PolygonMesh(NamedTuple):
     mesh_type: MeshType
 
     def __repr__(self) -> str:
-        return f"<PolygonMesh number of elements: {self.n_elements}, boundray condirions: {self.conditions}, mesh type: {self.mesh_type}>"
+        return f"<PolygonMesh number of elements: {self.n_elements}, boundary conditions: {self.conditions}, mesh type: {self.mesh_type}>"
 
     def save(self, filename: str | Path) -> None:
         """Save the mesh data as an npz file.
@@ -101,7 +101,7 @@ class PolygonMesh(NamedTuple):
             data["mesh_type"],
         )
 
-    def boudary_node_index(self, condition: Condition) -> NDArray[np.int64]:
+    def boundary_node_index(self, condition: Condition) -> NDArray[np.int64]:
         """Extract the global node numbers of boundary nodes with the specified condition applied.
 
         Args:
@@ -110,10 +110,10 @@ class PolygonMesh(NamedTuple):
         Returns:
             NDArray[np.int64]: global node numbers of boundary nodes with `condition` applied.
         """
-        is_vaild = [c == condition for c in self.conditions]
-        return self.boundary_nodes[is_vaild]
+        mask = [c == condition for c in self.conditions]
+        return self.boundary_nodes[mask]
 
-    def boudary_element_index(self, condition: Condition, both: bool = True) -> NDArray[np.int64]:
+    def boundary_element_index(self, condition: Condition, both: bool = True) -> NDArray[np.int64]:
         """Extract the node numbers of the start and end points of boundary elements with the specified condition applied.
         Args:
             condition (Condition): target condition.
@@ -123,14 +123,12 @@ class PolygonMesh(NamedTuple):
             NDArray[np.int64]: boundary node numbers of the start and end points of boundary elements with `condition` applied.
         """
         if both:
-            is_vaild = [
+            mask = [
                 self.conditions[i] == condition and self.conditions[j] == condition for i, j in self.boundary_element_nodes
             ]
         else:
-            is_vaild = [
-                self.conditions[i] == condition or self.conditions[j] == condition for i, j in self.boundary_element_nodes
-            ]
-        return self.boundary_element_nodes[is_vaild]
+            mask = [self.conditions[i] == condition or self.conditions[j] == condition for i, j in self.boundary_element_nodes]
+        return self.boundary_element_nodes[mask]
 
     def plot(self, filename: Path | str) -> None:
         """Visualize this mesh data.
@@ -146,14 +144,14 @@ class PolygonMesh(NamedTuple):
             else:
                 index = list(idx) + [idx[0]]
             ax.plot(self.x[index], self.y[index], c="black")
-        indexes = self.boudary_node_index(Condition.DIRICHLET)
+        indexes = self.boundary_node_index(Condition.DIRICHLET)
         ax.scatter(self.x[indexes], self.y[indexes], c="blue")
-        indexes = self.boudary_node_index(Condition.NEUMANN)
+        indexes = self.boundary_node_index(Condition.NEUMANN)
         ax.scatter(self.x[indexes], self.y[indexes], c="red")
-        for idx in self.boudary_element_index(Condition.DIRICHLET, both=False):
+        for idx in self.boundary_element_index(Condition.DIRICHLET, both=False):
             index = self.boundary_nodes[idx]
             ax.plot(self.x[index], self.y[index], c="blue")
-        for idx in self.boudary_element_index(Condition.NEUMANN, both=True):
+        for idx in self.boundary_element_index(Condition.NEUMANN, both=True):
             index = self.boundary_nodes[idx]
             ax.plot(self.x[index], self.y[index], c="red")
         fig.tight_layout()

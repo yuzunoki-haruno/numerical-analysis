@@ -47,7 +47,7 @@ class Fem2d:
     def __init__(self, mesh: PolygonMesh):
         """A class of two-dimensional finite element method (2D-FEM).
 
-        Using this class, boundary value problems for partial  differential equations can be discretised using the 2D-FEM.
+        Using this class, boundary value problems for partial  differential equations can be discretized using the 2D-FEM.
         It can handle both triangle and rectangle elements as input mesh data.
         (A rectangular element will be implemented in the future).
         """
@@ -115,7 +115,7 @@ class Fem2d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        global_index = self.mesh.boudary_node_index(Condition.DIRICHLET)
+        global_index = self.mesh.boundary_node_index(Condition.DIRICHLET)
         d = np.zeros_like(rhs)
         d[global_index] = values[global_index]
         rhs -= coefficient.dot(d)
@@ -131,7 +131,7 @@ class Fem2d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        neumann_elements = self.mesh.boudary_element_index(Condition.NEUMANN, both=True)
+        neumann_elements = self.mesh.boundary_element_index(Condition.NEUMANN, both=True)
         g = np.sum(values[self.mesh.boundary_nodes] * self.mesh.normals, axis=1)
         for s, e in neumann_elements:
             i, j = self.mesh.boundary_nodes[s], self.mesh.boundary_nodes[e]
@@ -142,17 +142,17 @@ class Fem2d:
             rhs[j] += g[s] * d / 6 + g[e] * d / 3
 
 
-def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_materix: NDArray) -> None:
+def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_matrix: NDArray) -> None:
     """Update a global matrix.
 
     Args:
         matrix (lil_matrix): matrix to be updated. It will be overwritten with the update results.
         indexes (tuple[int, ...]): column and row numbers of the updated elements.
-        local_materix (NDArray): local matrix used for update.
+        local_matrix (NDArray): local matrix used for update.
     """
     row_idx = np.vstack((indexes,) * len(indexes)).T.flatten()
     col_idx = np.hstack((indexes,) * len(indexes))
-    matrix[row_idx, col_idx] += local_materix
+    matrix[row_idx, col_idx] += local_matrix
 
 
 def _update_global_matrices(matrices: list[lil_matrix], indexes: tuple[int, ...], local_matrices: tuple[NDArray, ...]) -> None:
@@ -165,5 +165,5 @@ def _update_global_matrices(matrices: list[lil_matrix], indexes: tuple[int, ...]
     """
     row_idx = np.vstack((indexes,) * len(indexes)).T.flatten()
     col_idx = np.hstack((indexes,) * len(indexes))
-    for i, local_materix in enumerate(local_matrices):
-        matrices[i][row_idx, col_idx] += local_materix
+    for i, local_matrix in enumerate(local_matrices):
+        matrices[i][row_idx, col_idx] += local_matrix

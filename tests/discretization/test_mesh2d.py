@@ -32,7 +32,7 @@ DIRICHLET_NODE_INDEXES: tuple[list, ...] = (
     [0, 3, 11, 8, 4],
 )
 
-NEUMAN_NODE_INDEXES: tuple[list, ...] = (
+NEUMANN_NODE_INDEXES: tuple[list, ...] = (
     [],
     [4],
     [10, 9],
@@ -56,7 +56,7 @@ class TestPolygonMesh:
 
     @pytest.mark.parametrize(
         "conditions, dirichlet_idx, neumann_idx",
-        zip(CONDITIONS, DIRICHLET_NODE_INDEXES, NEUMAN_NODE_INDEXES),
+        zip(CONDITIONS, DIRICHLET_NODE_INDEXES, NEUMANN_NODE_INDEXES),
     )
     def test_init(self, conditions: list[Condition], dirichlet_idx: list[int], neumann_idx: list[int]) -> None:
         n_x, xmin, xmax = 4, -1.0, 2.0
@@ -94,8 +94,8 @@ class TestPolygonMesh:
         np.testing.assert_equal(
             mesh.boundary_element_nodes, ([0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 0])
         )
-        np.testing.assert_equal(mesh.boudary_node_index(Condition.DIRICHLET), dirichlet_idx)
-        np.testing.assert_equal(mesh.boudary_node_index(Condition.NEUMANN), neumann_idx)
+        np.testing.assert_equal(mesh.boundary_node_index(Condition.DIRICHLET), dirichlet_idx)
+        np.testing.assert_equal(mesh.boundary_node_index(Condition.NEUMANN), neumann_idx)
 
     def test_file_io(self) -> None:
         n_x, xmin, xmax = 4, -1.0, 2.0

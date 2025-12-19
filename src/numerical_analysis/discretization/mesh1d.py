@@ -10,7 +10,7 @@ from .condition import Condition
 class LineMesh(NamedTuple):
     """A one-dimensional mesh.
 
-    This class corresponds to 1st-orfer and 2nd-orfer elements.
+    This class corresponds to 1st-order and 2nd-order elements.
     The following function calculates the result of dividing the analysis interval into equal intervals.
         - numerical_analysis.discretization.mesh1d.generate_line_mesh(...)
 
@@ -35,7 +35,7 @@ class LineMesh(NamedTuple):
     mesh_type: int
 
     def __repr__(self) -> str:
-        return f"<LineMesh number of elements: {self.n_elements}, boundray condirions: {self.conditions}, mesh type: {self.mesh_type}>"
+        return f"<LineMesh number of elements: {self.n_elements}, boundary conditions: {self.conditions}, mesh type: {self.mesh_type}>"
 
     def save(self, filename: str | Path) -> None:
         """Save the mesh data as an npz file.
@@ -92,8 +92,8 @@ def generate_line_mesh(
 
     Args:
         n_nodes (int): number of the nodes.
-        xmin (float): minimum value of the analysed interval.
-        xmax (float): maximum value of the analysed interval.
+        xmin (float): minimum value of the analyzed interval.
+        xmax (float): maximum value of the analyzed interval.
         cmin (Condition): boundary condition on xmin.
         cmax (Condition): boundary condition on xmax.
         mesh_type (int, optional): number of nodes per mesh (2 or 3). Defaults to 2.
