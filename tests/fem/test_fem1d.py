@@ -4,7 +4,7 @@ from scipy.sparse.linalg import splu
 
 from example.fem.problem import PoissonProblem, LinearProblem, LaplaceProblem, HelmholtzProblem
 from numerical_analysis.discretization import Condition
-from numerical_analysis.discretization.mesh1d import generate_line_mesh
+from numerical_analysis.discretization.mesh1d import generate_line_mesh, MeshType
 from numerical_analysis.fem import Fem1d
 from numerical_analysis.util import metrics
 
@@ -25,7 +25,8 @@ class TestFem1D:
     def test_laplace(self, conditions: list[Condition]) -> None:
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = LaplaceProblem(mesh)
@@ -42,7 +43,8 @@ class TestFem1D:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = PoissonProblem(mesh)
@@ -60,7 +62,8 @@ class TestFem1D:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = HelmholtzProblem(mesh)
@@ -78,7 +81,8 @@ class TestFem1D:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = LinearProblem(mesh)
@@ -98,7 +102,8 @@ class TestFem1DHighOrder:
     def test_laplace(self, conditions: list[Condition]) -> None:
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = LaplaceProblem(mesh)
@@ -115,7 +120,8 @@ class TestFem1DHighOrder:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = PoissonProblem(mesh)
@@ -133,7 +139,8 @@ class TestFem1DHighOrder:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = HelmholtzProblem(mesh)
@@ -151,7 +158,8 @@ class TestFem1DHighOrder:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
             prob = LinearProblem(mesh)

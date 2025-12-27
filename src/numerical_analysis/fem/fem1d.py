@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 from scipy.sparse import lil_matrix
 
 from numerical_analysis.discretization import Condition, LineMesh
+from numerical_analysis.discretization.mesh1d import MeshType
 
 LAPLACIAN_MATRIX_2X2 = np.array((1, -1, -1, 1))
 DIFFERENTIAL_MATRIX_2X2 = np.array((-1 / 2, 1 / 2, -1 / 2, 1 / 2))
@@ -65,14 +66,16 @@ class Fem1d:
         """
         self.mesh = mesh
 
-        if mesh.mesh_type == 3:
+        if mesh.mesh_type == MeshType.FirstOrder:
+            local_laplacian_matrix = LAPLACIAN_MATRIX_2X2
+            local_differential_matrix = DIFFERENTIAL_MATRIX_2X2
+            local_term_matrix = TERM_MATRIX_2X2
+        elif mesh.mesh_type == MeshType.SecondOrder:
             local_laplacian_matrix = LAPLACIAN_MATRIX_3X3
             local_differential_matrix = DIFFERENTIAL_MATRIX_3X3
             local_term_matrix = TERM_MATRIX_3X3
         else:
-            local_laplacian_matrix = LAPLACIAN_MATRIX_2X2
-            local_differential_matrix = DIFFERENTIAL_MATRIX_2X2
-            local_term_matrix = TERM_MATRIX_2X2
+            raise ValueError
 
         self.laplacian_matrix = lil_matrix((mesh.n_nodes, mesh.n_nodes))
         self.differential_matrix = lil_matrix((mesh.n_nodes, mesh.n_nodes))
@@ -127,8 +130,7 @@ class Fem1d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        local_index = _get_dirichlet_indexes(self.mesh.conditions)
-        global_index = [self.mesh.boundary_nodes[i] for i in local_index]
+        global_index = self.mesh.boundary_node_indexes(Condition.DIRICHLET)
         d = np.zeros_like(rhs)
         d[global_index] = values[global_index]
         rhs -= coefficient.dot(d)
@@ -144,7 +146,7 @@ class Fem1d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        local_index = _get_neumann_indexes(self.mesh.conditions)
+        local_index = self.mesh.boundary_node_indexes(Condition.NEUMANN, local=True)
         global_index = [self.mesh.boundary_nodes[i] for i in local_index]
         for i, m in zip(global_index, local_index):
             rhs[i] += self.mesh.normals[m] * values[i]
@@ -163,27 +165,3 @@ def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_ma
     row_idx = np.vstack((indexes,) * len(indexes)).T.flatten()
     col_idx = np.hstack((indexes,) * len(indexes))
     matrix[row_idx, col_idx] += local_matrix
-
-
-def _get_dirichlet_indexes(conditions: tuple[Condition, Condition]) -> tuple[int, ...]:
-    """Get the indexes of the boundary node to the Dirichlet condition.
-
-    Args:
-        conditions (tuple[Condition, Condition]): boundary conditions on boundary nodes.
-
-    Returns:
-        tuple[int, ...]: indexes of the boundary node to the Dirichlet condition.
-    """
-    return tuple(i for i, c in enumerate(conditions) if c == Condition.DIRICHLET)
-
-
-def _get_neumann_indexes(conditions: tuple[Condition, Condition]) -> tuple[int, ...]:
-    """Get the indexes of the boundary node to the Neumann boundary condition.
-
-    Args:
-        conditions (tuple[Condition, Condition]): boundary conditions on boundary nodes.
-
-    Returns:
-        tuple[int, ...]: indexes of the boundary node to the Neumann condition.
-    """
-    return tuple(i for i, c in enumerate(conditions) if c == Condition.NEUMANN)

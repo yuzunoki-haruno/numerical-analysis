@@ -2,7 +2,7 @@ from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import splu
 
 from numerical_analysis.discretization import Condition
-from numerical_analysis.discretization.mesh1d import generate_line_mesh
+from numerical_analysis.discretization.mesh1d import generate_line_mesh, MeshType
 from numerical_analysis.fem import Fem1d
 from numerical_analysis.util import metrics, vis
 
@@ -32,7 +32,7 @@ def main() -> None:
 
     cmin = Condition.DIRICHLET if args.condition[0].lower() == "d" else Condition.NEUMANN
     cmax = Condition.DIRICHLET if args.condition[1].lower() == "d" else Condition.NEUMANN
-    mesh_type = 3 if args.high_order else 2
+    mesh_type = MeshType.SecondOrder if args.high_order else MeshType.FirstOrder
 
     # mesh generation.
     mesh = generate_line_mesh(args.n_nodes, args.xmin, args.xmax, cmin, cmax, mesh_type)
