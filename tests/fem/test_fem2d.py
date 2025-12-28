@@ -8,11 +8,12 @@ from scipy.sparse.linalg import splu
 from numerical_analysis.discretization import Condition
 from numerical_analysis.discretization.mesh2d import generate_polygon_mesh
 from numerical_analysis.fem import Fem2d
+from numerical_analysis.util import metrics
 
 
 CASES = ((11, 11), (41, 41))
 CASES_HElMHOLTZ = ((21, 21), (41, 41))
-XMIN, XMAX, YMIN, YMAX = -1.125, -0.125, 0.125, 1.125
+XMIN, XMAX, YMIN, YMAX = -1.25, -0.25, 0.5, 1.5
 
 
 class TestFem2D:
@@ -27,9 +28,10 @@ class TestFem2D:
             mesh = generate_polygon_mesh(n_x, xmin, xmax, n_y, ymin, ymax, c1, c2, c3, c4)
             fem = Fem2d(mesh)
 
-            u = np.sin(2.0 * np.pi * mesh.x) * np.sinh(2.0 * np.pi * mesh.y)
-            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * mesh.x) * np.sinh(2.0 * np.pi * mesh.y)
-            gy = 2.0 * np.pi * np.sin(2.0 * np.pi * mesh.x) * np.cosh(2.0 * np.pi * mesh.y)
+            x, y = mesh.x[:, 0], mesh.x[:, 1]
+            u = np.sin(2.0 * np.pi * x) * np.sinh(2.0 * np.pi * y)
+            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.sinh(2.0 * np.pi * y)
+            gy = 2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.cosh(2.0 * np.pi * y)
             g = np.vstack((gx, gy)).T
             f = np.zeros_like(u)
             coefficient = fem.laplacian_matrix
@@ -39,7 +41,7 @@ class TestFem2D:
             fem.implement_neumann(rhs, g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, u)
             assert relative_error < error_old
             error_old = relative_error
 
@@ -53,11 +55,12 @@ class TestFem2D:
             mesh = generate_polygon_mesh(n_x, xmin, xmax, n_y, ymin, ymax, c1, c2, c3, c4)
             fem = Fem2d(mesh)
 
-            u = np.sin(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y)
-            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y)
-            gy = -2.0 * np.pi * np.sin(2.0 * np.pi * mesh.x) * np.sin(2.0 * np.pi * mesh.y)
+            x, y = mesh.x[:, 0], mesh.x[:, 1]
+            u = np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+            gy = -2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
             g = np.vstack((gx, gy)).T
-            f = 8.0 * np.pi**2 * np.sin(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y)
+            f = 8.0 * np.pi**2 * np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
             coefficient = fem.laplacian_matrix
             rhs = fem.term(f)
 
@@ -65,7 +68,7 @@ class TestFem2D:
             fem.implement_neumann(rhs, g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, u)
             assert relative_error < error_old
             error_old = relative_error
 
@@ -79,9 +82,10 @@ class TestFem2D:
             mesh = generate_polygon_mesh(n_x, xmin, xmax, n_y, ymin, ymax, c1, c2, c3, c4)
             fem = Fem2d(mesh)
 
-            u = np.sin(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y)
-            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y)
-            gy = -2.0 * np.pi * np.sin(2.0 * np.pi * mesh.x) * np.sin(2.0 * np.pi * mesh.y)
+            x, y = mesh.x[:, 0], mesh.x[:, 1]
+            u = np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+            gy = -2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
             g = np.vstack((gx, gy)).T
             f = np.zeros_like(u)
             coefficient = fem.laplacian_matrix
@@ -92,7 +96,7 @@ class TestFem2D:
             fem.implement_neumann(rhs, g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, u)
             assert relative_error < error_old
             error_old = relative_error
 
@@ -106,13 +110,14 @@ class TestFem2D:
             mesh = generate_polygon_mesh(n_x, xmin, xmax, n_y, ymin, ymax, c1, c2, c3, c4)
             fem = Fem2d(mesh)
 
-            u = np.sin(2.0 * np.pi * mesh.x) * np.sin(2.0 * np.pi * mesh.y)
-            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * mesh.x) * np.sin(2.0 * np.pi * mesh.y)
-            gy = 2.0 * np.pi * np.sin(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y)
+            x, y = mesh.x[:, 0], mesh.x[:, 1]
+            u = np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+            gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+            gy = 2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
             g = np.vstack((gx, gy)).T
-            f = 8.0 * np.pi**2 * np.sin(2.0 * np.pi * mesh.x) * np.sin(2.0 * np.pi * mesh.y)
-            f -= 2.0 * np.pi * np.cos(2.0 * np.pi * mesh.x) * np.sin(2.0 * np.pi * mesh.y) / 3.0
-            f -= 2.0 * np.pi * np.sin(2.0 * np.pi * mesh.x) * np.cos(2.0 * np.pi * mesh.y) / 5.0
+            f = 8.0 * np.pi**2 * np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+            f -= 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y) / 3.0
+            f -= 2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y) / 5.0
             coefficient = fem.laplacian_matrix
             coefficient += fem.differential_matrix[0] / 3.0
             coefficient += fem.differential_matrix[1] / 5.0
@@ -122,6 +127,6 @@ class TestFem2D:
             fem.implement_neumann(rhs, g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, u)
             assert relative_error < error_old
             error_old = relative_error

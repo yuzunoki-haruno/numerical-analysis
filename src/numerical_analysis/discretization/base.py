@@ -30,8 +30,8 @@ class MeshData(NamedTuple):
             return self.boundary_nodes[mask]
 
     def boundary_element_indexes(self, condition: StrEnum, both: bool = True) -> NDArray[np.int64]:
-        mask_st = self.boundary_element_nodes[:, 0] == condition
-        mask_ed = self.boundary_element_nodes[:, 1] == condition
+        mask_st = [c == condition for c in self.conditions]
+        mask_ed = [self.conditions[-1] == condition] + [c == condition for c in self.conditions[:-1]]
         if both:
             mask = np.logical_and(mask_st, mask_ed)
         else:

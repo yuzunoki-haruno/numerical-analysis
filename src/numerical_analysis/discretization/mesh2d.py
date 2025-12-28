@@ -1,11 +1,10 @@
 from enum import IntEnum
 from pathlib import Path
-from typing import NamedTuple, Self
+from typing import Self
 
 import numpy as np
-import matplotlib.pyplot as plt
-from numpy.typing import NDArray
 
+from .base import Mesh
 from .condition import Condition
 
 
@@ -14,7 +13,7 @@ class MeshType(IntEnum):
     Rectangle = 4
 
 
-class PolygonMesh(NamedTuple):
+class PolygonMesh(Mesh):
     """A two-dimensional mesh.
 
     This class corresponds to triangle and rectangle elements (A rectangular element will be implemented in the future).
@@ -37,23 +36,30 @@ class PolygonMesh(NamedTuple):
         mesh_type (MeshType): The shape of the mesh (MeshType.Triangle or MeshType.Rectangle).
     """
 
-    n_x: int
-    n_y: int
-    n_nodes: int
-    n_elements: int
-    x: NDArray[np.float64]
-    y: NDArray[np.float64]
-    element_nodes: list[tuple[int, int, int]] | list[tuple[int, int, int, int]]
-    boundary_nodes: NDArray[np.int64]
-    boundary_element_nodes: NDArray[np.int64]
-    normals: NDArray[np.float64]
-    conditions: list[Condition]
-    mesh_type: MeshType
+    def check_data(self) -> bool:
+        num_boundary_nodes = len(self.boundary_nodes)
+        if self.x.shape != (self.n_nodes, 2):
+            return False
+        if self.element_nodes.shape != (self.n_elements, int(self.mesh_type)):
+            return False
+        if self.boundary_nodes.shape != (num_boundary_nodes,):
+            return False
+        if self.boundary_element_nodes.shape != (num_boundary_nodes, 2):
+            return False
+        if self.normals.shape != (num_boundary_nodes, 2):
+            return False
+        if len(self.conditions) != num_boundary_nodes:
+            return False
+        if not np.all([isinstance(c, Condition) for c in self.conditions]):
+            return False
+        if not isinstance(self.mesh_type, MeshType):
+            return False
+        return True
 
     def __repr__(self) -> str:
         return f"<PolygonMesh number of elements: {self.n_elements}, boundary conditions: {self.conditions}, mesh type: {self.mesh_type}>"
 
-    def save(self, filename: str | Path) -> None:
+    def save_npz(self, filename: str | Path) -> None:
         """Save the mesh data as an npz file.
 
         Args:
@@ -61,12 +67,9 @@ class PolygonMesh(NamedTuple):
         """
         np.savez_compressed(
             filename,
-            n_x=self.n_x,
-            n_y=self.n_y,
             n_nodes=self.n_nodes,
             n_elements=self.n_elements,
             x=self.x,
-            y=self.y,
             element_nodes=self.element_nodes,
             boundary_nodes=self.boundary_nodes,
             boundary_element_nodes=self.boundary_element_nodes,
@@ -76,7 +79,7 @@ class PolygonMesh(NamedTuple):
         )
 
     @classmethod
-    def load(cls, filename: str | Path) -> Self:
+    def load_npz(cls, filename: str | Path) -> Self:
         """Load the mesh data as an npz file.
 
         Args:
@@ -87,12 +90,9 @@ class PolygonMesh(NamedTuple):
         """
         data = np.load(filename)
         return cls(
-            data["n_x"],
-            data["n_y"],
             data["n_nodes"],
             data["n_elements"],
             data["x"],
-            data["y"],
             data["element_nodes"],
             data["boundary_nodes"],
             data["boundary_element_nodes"],
@@ -100,62 +100,6 @@ class PolygonMesh(NamedTuple):
             data["conditions"],
             data["mesh_type"],
         )
-
-    def boundary_node_index(self, condition: Condition) -> NDArray[np.int64]:
-        """Extract the global node numbers of boundary nodes with the specified condition applied.
-
-        Args:
-            condition (Condition): target condition.
-
-        Returns:
-            NDArray[np.int64]: global node numbers of boundary nodes with `condition` applied.
-        """
-        mask = [c == condition for c in self.conditions]
-        return self.boundary_nodes[mask]
-
-    def boundary_element_index(self, condition: Condition, both: bool = True) -> NDArray[np.int64]:
-        """Extract the node numbers of the start and end points of boundary elements with the specified condition applied.
-        Args:
-            condition (Condition): target condition.
-            both (bool, optional): _description_. Defaults to True.
-
-        Returns:
-            NDArray[np.int64]: boundary node numbers of the start and end points of boundary elements with `condition` applied.
-        """
-        if both:
-            mask = [
-                self.conditions[i] == condition and self.conditions[j] == condition for i, j in self.boundary_element_nodes
-            ]
-        else:
-            mask = [self.conditions[i] == condition or self.conditions[j] == condition for i, j in self.boundary_element_nodes]
-        return self.boundary_element_nodes[mask]
-
-    def plot(self, filename: Path | str) -> None:
-        """Visualize this mesh data.
-
-        Args:
-            filename (Path | str): file path for saving visualization results.
-        """
-        fig, ax = plt.subplots()
-        ax.scatter(self.x, self.y, c="black")
-        for idx in self.element_nodes:
-            if len(idx) == 4:
-                index = list(idx)
-            else:
-                index = list(idx) + [idx[0]]
-            ax.plot(self.x[index], self.y[index], c="black")
-        indexes = self.boundary_node_index(Condition.DIRICHLET)
-        ax.scatter(self.x[indexes], self.y[indexes], c="blue")
-        indexes = self.boundary_node_index(Condition.NEUMANN)
-        ax.scatter(self.x[indexes], self.y[indexes], c="red")
-        for idx in self.boundary_element_index(Condition.DIRICHLET, both=False):
-            index = self.boundary_nodes[idx]
-            ax.plot(self.x[index], self.y[index], c="blue")
-        for idx in self.boundary_element_index(Condition.NEUMANN, both=True):
-            index = self.boundary_nodes[idx]
-            ax.plot(self.x[index], self.y[index], c="red")
-        fig.tight_layout()
-        fig.savefig(filename)
 
 
 def generate_polygon_mesh(
@@ -196,7 +140,6 @@ def generate_polygon_mesh(
     x_ = np.linspace(xmin, xmax, num=n_x)
     y_ = np.linspace(ymin, ymax, num=n_y)
     x, y = np.meshgrid(x_, y_, indexing="xy")
-    x, y = x.flatten(), y.flatten()
     element_nodes: list[tuple[int, int, int]] | list[tuple[int, int, int, int]]
     if mesh_type == MeshType.Triangle:
         n_nodes = n_x * n_y
@@ -224,16 +167,13 @@ def generate_polygon_mesh(
     conditions[n_x + n_y - 2] = Condition.DIRICHLET
     conditions[2 * n_x + n_y - 3] = Condition.DIRICHLET
     return PolygonMesh(
-        n_x,
-        n_y,
         n_nodes,
         n_elements,
-        x,
-        y,
-        element_nodes,
+        np.vstack((x.flatten(), y.flatten())).T,
+        np.array(element_nodes),
         np.array(boundary_nodes, dtype=np.int64),
         np.array(boundary_element_nodes, dtype=np.int64),
         np.array(normals, dtype=float),
-        conditions,
+        tuple(conditions),
         mesh_type,
     )

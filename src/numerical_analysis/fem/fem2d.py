@@ -66,8 +66,8 @@ class Fem2d:
         self.differential_matrix = [lil_matrix((mesh.n_nodes, mesh.n_nodes)), lil_matrix((mesh.n_nodes, mesh.n_nodes))]
         self.term_matrix = lil_matrix((mesh.n_nodes, mesh.n_nodes))
         for idx in mesh.element_nodes:
-            x = mesh.x[list(idx)]
-            y = mesh.y[list(idx)]
+            x = mesh.x[list(idx), 0]
+            y = mesh.x[list(idx), 1]
             _update_global_matrix(self.laplacian_matrix, idx, local_laplacian_matrix(x, y))
             _update_global_matrices(self.differential_matrix, idx, local_differential_matrix(x, y))
             _update_global_matrix(self.term_matrix, idx, local_term_matrix(x, y))
@@ -115,7 +115,7 @@ class Fem2d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        global_index = self.mesh.boundary_node_index(Condition.DIRICHLET)
+        global_index = self.mesh.boundary_node_indexes(Condition.DIRICHLET)
         d = np.zeros_like(rhs)
         d[global_index] = values[global_index]
         rhs -= coefficient.dot(d)
@@ -131,13 +131,11 @@ class Fem2d:
             rhs (NDArray): right-hand side vector.
             values (NDArray): boundary values.
         """
-        neumann_elements = self.mesh.boundary_element_index(Condition.NEUMANN, both=True)
+        neumann_elements = self.mesh.boundary_element_indexes(Condition.NEUMANN, both=True)
         g = np.sum(values[self.mesh.boundary_nodes] * self.mesh.normals, axis=1)
         for s, e in neumann_elements:
             i, j = self.mesh.boundary_nodes[s], self.mesh.boundary_nodes[e]
-            st = np.array((self.mesh.x[i], self.mesh.y[i]))
-            ed = np.array((self.mesh.x[j], self.mesh.y[j]))
-            d = np.linalg.norm(ed - st)
+            d = np.linalg.norm(self.mesh.x[i] - self.mesh.x[j])
             rhs[i] += g[s] * d / 3 + g[e] * d / 6
             rhs[j] += g[s] * d / 6 + g[e] * d / 3
 

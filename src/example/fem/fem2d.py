@@ -40,7 +40,7 @@ class LaplaceProblem(Problem):
 
     def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
         coefficient = fem.laplacian_matrix
-        rhs = np.zeros_like(fem.mesh.x)
+        rhs = np.zeros_like(self.u_)
         return coefficient, rhs
 
     @property
@@ -92,7 +92,7 @@ class HelmholtzProblem(Problem):
     def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
         coefficient = fem.laplacian_matrix
         coefficient += -8.0 * np.pi**2 * fem.term_matrix
-        rhs = np.zeros_like(fem.mesh.x)
+        rhs = np.zeros_like(self.u_)
         return coefficient, rhs
 
     @property
@@ -143,13 +143,13 @@ def main() -> None:
     from pathlib import Path
 
     parser = argparse.ArgumentParser(description="2D Finite Element Analysis.")
-    parser.add_argument("xmin", type=float, help="Minimum of x-axis.")
-    parser.add_argument("xmax", type=float, help="Maximum of x-axis.")
-    parser.add_argument("n_x", type=int, help="Number of nodes.")
-    parser.add_argument("ymin", type=float, help="Minimum of y-axis.")
-    parser.add_argument("ymax", type=float, help="Maximum of y-axis.")
-    parser.add_argument("n_y", type=int, help="Number of nodes.")
-    parser.add_argument("condition", type=str, nargs=4, help="Boundary condition.")
+    parser.add_argument("--n_x", type=int, default=41, help="Number of nodes.")
+    parser.add_argument("--xmin", type=float, default=0.25, help="Minimum of x-axis.")
+    parser.add_argument("--xmax", type=float, default=1.25, help="Maximum of x-axis.")
+    parser.add_argument("--n_y", type=int, default=41, help="Number of nodes.")
+    parser.add_argument("--ymin", type=float, default=-0.5, help="Minimum of y-axis.")
+    parser.add_argument("--ymax", type=float, default=-1.5, help="Maximum of y-axis.")
+    parser.add_argument("--condition", type=str, nargs=4, default=("D", "D", "D", "D"), help="Boundary condition.")
     parser.add_argument("--problem", type=str, default="poisson", help="Problem name.")
     parser.add_argument("--output_dir", type=str, default="result_fem2d", help="Path of output directory.")
     args = parser.parse_args()
@@ -169,13 +169,13 @@ def main() -> None:
     # FEA formulation.
     fem = Fem2d(mesh)
     if problem == "laplace":
-        prob: Problem = LaplaceProblem(mesh.x, mesh.y)
+        prob: Problem = LaplaceProblem(mesh.x[:, 0], mesh.x[:, 1])
     elif problem == "poisson":
-        prob = PoissonProblem(mesh.x, mesh.y)
+        prob = PoissonProblem(mesh.x[:, 0], mesh.x[:, 1])
     elif problem == "helmholtz":
-        prob = HelmholtzProblem(mesh.x, mesh.y)
+        prob = HelmholtzProblem(mesh.x[:, 0], mesh.x[:, 1])
     elif problem == "linear":
-        prob = LinearProblem(mesh.x, mesh.y)
+        prob = LinearProblem(mesh.x[:, 0], mesh.x[:, 1])
     else:
         raise NameError("This program can numerically solve `Laplace`, `Poisson`, `Helmholtz`, and `Linear` problems.")
     coefficient, rhs = prob.formulate(fem)
@@ -189,7 +189,7 @@ def main() -> None:
 
     # plot result.
     filename = output_dir / NAME_PLOT
-    vis.plot2d(filename, mesh.x, mesh.y, sol, prob.u, mesh.n_x, mesh.n_y)
+    vis.plot2d(filename, mesh.x[:, 0], mesh.x[:, 1], sol, prob.u, args.n_x, args.n_y)
 
     # write relative error
     with open(output_dir / NAME_TXT, mode="w") as file:
