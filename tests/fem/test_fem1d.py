@@ -2,7 +2,7 @@ import pytest
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import splu
 
-from example.fem.problem import PoissonProblem, LinearProblem, LaplaceProblem, HelmholtzProblem
+from example.fem.problem import PoissonProblem1D, LinearProblem1D, LaplaceProblem1D, HelmholtzProblem1D
 from numerical_analysis.discretization import Condition
 from numerical_analysis.discretization.mesh1d import generate_line_mesh, MeshType
 from numerical_analysis.fem import Fem1d
@@ -29,7 +29,7 @@ class TestFem1D:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = LaplaceProblem(mesh)
+            prob = LaplaceProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -47,7 +47,7 @@ class TestFem1D:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = PoissonProblem(mesh)
+            prob = PoissonProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -66,7 +66,7 @@ class TestFem1D:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = HelmholtzProblem(mesh)
+            prob = HelmholtzProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -85,7 +85,7 @@ class TestFem1D:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = LinearProblem(mesh)
+            prob = LinearProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -106,7 +106,7 @@ class TestFem1DHighOrder:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = LaplaceProblem(mesh)
+            prob = LaplaceProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -124,7 +124,7 @@ class TestFem1DHighOrder:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = PoissonProblem(mesh)
+            prob = PoissonProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -143,7 +143,7 @@ class TestFem1DHighOrder:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = HelmholtzProblem(mesh)
+            prob = HelmholtzProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)
@@ -162,7 +162,7 @@ class TestFem1DHighOrder:
             mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            prob = LinearProblem(mesh)
+            prob = LinearProblem1D(mesh)
             coefficient, rhs = prob.formulate(fem)
             fem.implement_dirichlet(coefficient, rhs, prob.u)
             fem.implement_neumann(rhs, prob.g)

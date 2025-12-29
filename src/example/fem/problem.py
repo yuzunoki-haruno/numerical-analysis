@@ -5,12 +5,16 @@ from numpy.typing import NDArray
 from scipy.sparse import lil_matrix
 
 from numerical_analysis.discretization.mesh1d import LineMesh
-from numerical_analysis.fem import Fem1d
+from numerical_analysis.discretization.mesh2d import PolygonMesh
+from numerical_analysis.fem import Fem1d, Fem2d
 
 
 class Problem(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def formulate(self, fem: Fem1d) -> tuple[lil_matrix, NDArray]: ...
+    def __init__(self, fem: LineMesh | PolygonMesh) -> None: ...
+
+    @abc.abstractmethod
+    def formulate(self, fem: Fem1d | Fem2d) -> tuple[lil_matrix, NDArray]: ...
 
     @property
     @abc.abstractmethod
@@ -25,7 +29,7 @@ class Problem(metaclass=abc.ABCMeta):
     def f(self) -> NDArray: ...
 
 
-class LaplaceProblem(Problem):
+class LaplaceProblem1D(Problem):
     def __init__(self, mesh: LineMesh) -> None:
         a, b = 2.0, 1.0
         self.u_ = a * mesh.x + b
@@ -50,7 +54,7 @@ class LaplaceProblem(Problem):
         return self.f_
 
 
-class PoissonProblem(Problem):
+class PoissonProblem1D(Problem):
     def __init__(self, mesh: LineMesh) -> None:
         a = 2.0 * np.pi
         self.u_ = np.cos(a * mesh.x)
@@ -75,7 +79,7 @@ class PoissonProblem(Problem):
         return self.f_
 
 
-class HelmholtzProblem(Problem):
+class HelmholtzProblem1D(Problem):
     def __init__(self, mesh: LineMesh) -> None:
         a = 2.0 * np.pi
         self.u_ = np.cos(a * mesh.x)
@@ -102,7 +106,7 @@ class HelmholtzProblem(Problem):
         return np.zeros_like(self.u_)
 
 
-class LinearProblem(Problem):
+class LinearProblem1D(Problem):
     def __init__(self, mesh: LineMesh) -> None:
         self.u_ = np.cos(2 * mesh.x) + np.exp(np.pi / 2) * np.sin(2 * mesh.x)
         self.u_ *= np.exp(-2 * mesh.x)
@@ -129,3 +133,121 @@ class LinearProblem(Problem):
     @property
     def f(self) -> NDArray:
         return self.f_
+
+
+class LaplaceProblem2D(Problem):
+    def __init__(self, mesh: PolygonMesh) -> None:
+        x, y = mesh.x[:, 0], mesh.x[:, 1]
+        self.u_ = np.sin(2.0 * np.pi * x) * np.sinh(2.0 * np.pi * y)
+        gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.sinh(2.0 * np.pi * y)
+        gy = 2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.cosh(2.0 * np.pi * y)
+        self.g_ = _normal_derivative(gx, gy, mesh.normals, mesh.boundary_nodes)
+        self.f_ = np.zeros_like(self.u_)
+
+    def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
+        coefficient = fem.laplacian_matrix
+        rhs = fem.term(self.f_)
+        return coefficient, rhs
+
+    @property
+    def u(self) -> NDArray:
+        return self.u_
+
+    @property
+    def g(self) -> NDArray:
+        return self.g_
+
+    @property
+    def f(self) -> NDArray:
+        return self.f_
+
+
+class PoissonProblem2D(Problem):
+    def __init__(self, mesh: PolygonMesh) -> None:
+        x, y = mesh.x[:, 0], mesh.x[:, 1]
+        self.u_ = np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+        gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+        gy = -2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+        self.g_ = _normal_derivative(gx, gy, mesh.normals, mesh.boundary_nodes)
+        self.f_ = 8.0 * np.pi**2 * np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+
+    def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
+        coefficient = fem.laplacian_matrix
+        rhs = fem.term(self.f)
+        return coefficient, rhs
+
+    @property
+    def u(self) -> NDArray:
+        return self.u_
+
+    @property
+    def g(self) -> NDArray:
+        return self.g_
+
+    @property
+    def f(self) -> NDArray:
+        return self.f_
+
+
+class HelmholtzProblem2D(Problem):
+    def __init__(self, mesh: PolygonMesh) -> None:
+        x, y = mesh.x[:, 0], mesh.x[:, 1]
+        self.u_ = np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+        gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+        gy = -2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+        self.g_ = _normal_derivative(gx, gy, mesh.normals, mesh.boundary_nodes)
+        self.f_ = np.zeros_like(self.u_)
+
+    def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
+        coefficient = fem.laplacian_matrix
+        coefficient += -8.0 * np.pi**2 * fem.term_matrix
+        rhs = fem.term(self.f_)
+        return coefficient, rhs
+
+    @property
+    def u(self) -> NDArray:
+        return self.u_
+
+    @property
+    def g(self) -> NDArray:
+        return self.g_
+
+    @property
+    def f(self) -> NDArray:
+        return self.f_
+
+
+class LinearProblem2D(Problem):
+    def __init__(self, mesh: PolygonMesh) -> None:
+        x, y = mesh.x[:, 0], mesh.x[:, 1]
+        self.u_ = np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+        gx = 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+        gy = 2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y)
+        self.g_ = _normal_derivative(gx, gy, mesh.normals, mesh.boundary_nodes)
+        self.f_ = 8.0 * np.pi**2 * np.sin(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y)
+        self.f_ -= 2.0 * np.pi * np.cos(2.0 * np.pi * x) * np.sin(2.0 * np.pi * y) / 3.0
+        self.f_ -= 2.0 * np.pi * np.sin(2.0 * np.pi * x) * np.cos(2.0 * np.pi * y) / 5.0
+
+    def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
+        coefficient = fem.laplacian_matrix
+        coefficient += fem.differential_matrix[0] / 3.0
+        coefficient += fem.differential_matrix[1] / 5.0
+        rhs = fem.term(self.f_)
+        return coefficient, rhs
+
+    @property
+    def u(self) -> NDArray:
+        return self.u_
+
+    @property
+    def g(self) -> NDArray:
+        return self.g_
+
+    @property
+    def f(self) -> NDArray:
+        return self.f_
+
+
+def _normal_derivative(grad_x: NDArray, grad_y: NDArray, normal: NDArray, boundary_nodes: NDArray) -> NDArray:
+    grad = np.vstack((grad_x, grad_y)).T
+    return np.array(np.sum(grad[boundary_nodes] * normal, axis=1))

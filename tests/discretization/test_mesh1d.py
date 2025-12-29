@@ -66,8 +66,9 @@ class TestLineMesh:
         with tempfile.TemporaryDirectory() as tmp_dir:
             filename = Path(tmp_dir) / "save.npz"
             mesh.save_npz(filename)
-            # verifying expectations and values.
             loaded_mesh = LineMesh.load_npz(filename)
+            # verifying expectations and values.
+            assert loaded_mesh.check_data()
             assert mesh.n_nodes == loaded_mesh.n_nodes
             assert mesh.n_elements == loaded_mesh.n_elements
             np.testing.assert_equal(mesh.x, loaded_mesh.x)

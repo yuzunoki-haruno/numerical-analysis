@@ -14,6 +14,8 @@ from numerical_analysis.discretization.mesh2d import (
 
 CONDITIONS = itertools.product([Condition.DIRICHLET, Condition.NEUMANN], repeat=4)
 
+MESH_TYPE_LIST = [MeshType.Triangle, MeshType.Rectangle]
+
 DIRICHLET_NODE_INDEXES: tuple[list, ...] = (
     [0, 1, 2, 3, 7, 11, 10, 9, 8, 4],
     [0, 1, 2, 3, 7, 11, 10, 9, 8],
@@ -98,7 +100,8 @@ class TestPolygonMesh:
         np.testing.assert_equal(mesh.boundary_node_indexes(Condition.DIRICHLET), dirichlet_idx)
         np.testing.assert_equal(mesh.boundary_node_indexes(Condition.NEUMANN), neumann_idx)
 
-    def test_file_io(self) -> None:
+    @pytest.mark.parametrize("mesh_type", MESH_TYPE_LIST)
+    def test_file_io(self, mesh_type: MeshType) -> None:
         n_x, xmin, xmax = 4, -1.0, 2.0
         n_y, ymin, ymax = 3, 0.0, 2.0
         c1, c2, c3, c4 = Condition.DIRICHLET, Condition.NEUMANN, Condition.DIRICHLET, Condition.NEUMANN

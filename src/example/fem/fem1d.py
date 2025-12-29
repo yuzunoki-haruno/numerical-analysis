@@ -6,7 +6,7 @@ from numerical_analysis.discretization.mesh1d import generate_line_mesh, MeshTyp
 from numerical_analysis.fem import Fem1d
 from numerical_analysis.util import metrics, vis
 
-from example.fem.problem import PoissonProblem, LinearProblem, LaplaceProblem, HelmholtzProblem, Problem
+from example.fem.problem import PoissonProblem1D, LinearProblem1D, LaplaceProblem1D, HelmholtzProblem1D, Problem
 
 NAME_PLOT = "result.png"
 NAME_TXT = "result.txt"
@@ -40,13 +40,13 @@ def main() -> None:
     # FEA formulation.
     fem = Fem1d(mesh)
     if problem == "laplace":
-        prob: Problem = LaplaceProblem(mesh)
+        prob: Problem = LaplaceProblem1D(mesh)
     elif problem == "poisson":
-        prob = PoissonProblem(mesh)
+        prob = PoissonProblem1D(mesh)
     elif problem == "helmholtz":
-        prob = HelmholtzProblem(mesh)
+        prob = HelmholtzProblem1D(mesh)
     elif problem == "linear":
-        prob = LinearProblem(mesh)
+        prob = LinearProblem1D(mesh)
     else:
         raise NameError("This program can numerically solve `Laplace`, `Poisson`, `Helmholtz`, and `Linear` problems.")
     coefficient, rhs = prob.formulate(fem)

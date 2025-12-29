@@ -97,8 +97,8 @@ class PolygonMesh(Mesh):
             data["boundary_nodes"],
             data["boundary_element_nodes"],
             data["normals"],
-            data["conditions"],
-            data["mesh_type"],
+            tuple(Condition(c) for c in data["conditions"]),
+            MeshType(data["mesh_type"]),
         )
 
 

@@ -132,12 +132,11 @@ class Fem2d:
             values (NDArray): boundary values.
         """
         neumann_elements = self.mesh.boundary_element_indexes(Condition.NEUMANN, both=True)
-        g = np.sum(values[self.mesh.boundary_nodes] * self.mesh.normals, axis=1)
         for s, e in neumann_elements:
             i, j = self.mesh.boundary_nodes[s], self.mesh.boundary_nodes[e]
             d = np.linalg.norm(self.mesh.x[i] - self.mesh.x[j])
-            rhs[i] += g[s] * d / 3 + g[e] * d / 6
-            rhs[j] += g[s] * d / 6 + g[e] * d / 3
+            rhs[i] += values[s] * d / 3 + values[e] * d / 6
+            rhs[j] += values[s] * d / 6 + values[e] * d / 3
 
 
 def _update_global_matrix(matrix: lil_matrix, indexes: tuple[int, ...], local_matrix: NDArray) -> None:
