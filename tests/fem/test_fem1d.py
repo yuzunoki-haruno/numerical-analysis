@@ -1,227 +1,173 @@
-import numpy as np
 import pytest
 from scipy.sparse import csc_matrix
 from scipy.sparse.linalg import splu
 
+from example.fem.problem import PoissonProblem1D, LinearProblem1D, LaplaceProblem1D, HelmholtzProblem1D
 from numerical_analysis.discretization import Condition
-from numerical_analysis.discretization.mesh1d import generate_line_mesh
+from numerical_analysis.discretization.mesh1d import generate_line_mesh, MeshType
 from numerical_analysis.fem import Fem1d
-
+from numerical_analysis.util import metrics
 
 CASES = (11, 21, 81)
+
+XMIN, XMAX = -0.5, 1.0
+
+CONDITIONS_LIST = [
+    [Condition.DIRICHLET, Condition.DIRICHLET],
+    [Condition.DIRICHLET, Condition.NEUMANN],
+    [Condition.NEUMANN, Condition.DIRICHLET],
+]
 
 
 class TestFem1D:
 
-    conditions_list = [
-        [Condition.DIRICHLET, Condition.DIRICHLET],
-        [Condition.DIRICHLET, Condition.NEUMANN],
-        [Condition.NEUMANN, Condition.DIRICHLET],
-    ]
-
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_laplace(self, conditions: list[Condition]) -> None:
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            coef, intercept = 2.0, 1.0
-            u = coef * mesh.x + intercept
-            g = coef * np.ones_like(mesh.x)
-            f = np.zeros_like(mesh.x)
-            coefficient = fem.laplacian_matrix
-            rhs = fem.term(f)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = LaplaceProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < 10 ** (-8)
 
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_poisson(self, conditions: list[Condition]) -> None:
         error_old = 1
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            coef = 2.0 * np.pi
-            coef_x = coef * mesh.x
-            u = np.sin(coef_x)
-            g = np.cos(coef_x) * coef
-            f = np.sin(coef_x) * coef**2
-            coefficient = fem.laplacian_matrix
-            rhs = fem.term(f)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = PoissonProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < error_old / 2
             error_old = relative_error
 
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_helmholtz(self, conditions: list[Condition]) -> None:
         error_old = 1
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            coef = 2.0 * np.pi
-            coef_x = coef * mesh.x
-            u = np.cos(coef_x)
-            g = -np.sin(coef_x) * coef
-            f = np.zeros_like(mesh.x)
-            coefficient = fem.laplacian_matrix
-            coefficient -= (coef**2) * fem.term_matrix
-            rhs = fem.term(f)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = HelmholtzProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < error_old / 2
             error_old = relative_error
 
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_linear(self, conditions: list[Condition]) -> None:
         error_old = 1
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax)
+            mesh_type = MeshType.FirstOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            two_x = 2 * mesh.x
-            coef = np.exp(np.pi / 2)
-            u = np.exp(-two_x) * (np.cos(two_x) + coef * np.sin(two_x))
-            g = np.exp(-two_x) * (2 * (coef - 1) * np.cos(two_x) - 2 * (coef + 1) * np.sin(two_x))
-            coefficient = fem.laplacian_matrix
-            coefficient -= 4 * fem.differential_matrix
-            coefficient -= 8 * fem.term_matrix
-            rhs = np.zeros_like(mesh.x)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = LinearProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < error_old / 2
             error_old = relative_error
 
 
 class TestFem1DHighOrder:
 
-    conditions_list = [
-        [Condition.DIRICHLET, Condition.DIRICHLET],
-        [Condition.DIRICHLET, Condition.NEUMANN],
-        [Condition.NEUMANN, Condition.DIRICHLET],
-    ]
-
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_laplace(self, conditions: list[Condition]) -> None:
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            coef, intercept = 2.0, 1.0
-            u = coef * mesh.x + intercept
-            g = coef * np.ones_like(mesh.x)
-            f = np.zeros_like(mesh.x)
-            coefficient = fem.laplacian_matrix
-            rhs = fem.term(f)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = LaplaceProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < 10 ** (-8)
 
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_poisson(self, conditions: list[Condition]) -> None:
         error_old = 1
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            coef = 2.0 * np.pi
-            coef_x = coef * mesh.x
-            u = np.sin(coef_x)
-            g = np.cos(coef_x) * coef
-            f = np.sin(coef_x) * coef**2
-            coefficient = fem.laplacian_matrix
-            rhs = fem.term(f)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = PoissonProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < error_old / 2
             error_old = relative_error
 
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_helmholtz(self, conditions: list[Condition]) -> None:
         error_old = 1
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            coef = 2.0 * np.pi
-            coef_x = coef * mesh.x
-            u = np.cos(coef_x)
-            g = -np.sin(coef_x) * coef
-            f = np.zeros_like(mesh.x)
-            coefficient = fem.laplacian_matrix
-            coefficient -= (coef**2) * fem.term_matrix
-            rhs = fem.term(f)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = HelmholtzProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < error_old / 2
             error_old = relative_error
 
-    @pytest.mark.parametrize("conditions", conditions_list)
+    @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_linear(self, conditions: list[Condition]) -> None:
         error_old = 1
-        for n in CASES:
-            n_nodes, xmin, xmax = n, -1, -1.5
+        for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type=3)
+            mesh_type = MeshType.SecondOrder
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
             fem = Fem1d(mesh)
 
-            two_x = 2 * mesh.x
-            coef = np.exp(np.pi / 2)
-            u = np.exp(-two_x) * (np.cos(two_x) + coef * np.sin(two_x))
-            g = np.exp(-two_x) * (2 * (coef - 1) * np.cos(two_x) - 2 * (coef + 1) * np.sin(two_x))
-            coefficient = fem.laplacian_matrix
-            coefficient -= 4 * fem.differential_matrix
-            coefficient -= 8 * fem.term_matrix
-            rhs = np.zeros_like(mesh.x)
-
-            fem.implement_dirichlet(coefficient, rhs, u)
-            fem.implement_neumann(rhs, g)
+            prob = LinearProblem1D(mesh)
+            coefficient, rhs = prob.formulate(fem)
+            fem.implement_dirichlet(coefficient, rhs, prob.u)
+            fem.implement_neumann(rhs, prob.g)
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
-            relative_error = np.max(np.abs(u - sol) / np.abs(u).max())
+            relative_error = metrics.relative_error(sol, prob.u)
             assert relative_error < error_old / 2
             error_old = relative_error

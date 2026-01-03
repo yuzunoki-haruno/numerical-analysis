@@ -1,16 +1,22 @@
+from enum import IntEnum
 from pathlib import Path
-from typing import NamedTuple, Self
+from typing import Self
 
 import numpy as np
-from numpy.typing import NDArray
 
+from .base import Mesh
 from .condition import Condition
 
 
-class LineMesh(NamedTuple):
+class MeshType(IntEnum):
+    FirstOrder = 2
+    SecondOrder = 3
+
+
+class LineMesh(Mesh):
     """A one-dimensional mesh.
 
-    This class corresponds to 1st-orfer and 2nd-orfer elements.
+    This class corresponds to 1st-order and 2nd-order elements.
     The following function calculates the result of dividing the analysis interval into equal intervals.
         - numerical_analysis.discretization.mesh1d.generate_line_mesh(...)
 
@@ -25,19 +31,26 @@ class LineMesh(NamedTuple):
         mesh_type (int): number of nodes per mesh.
     """
 
-    n_nodes: int
-    n_elements: int
-    x: NDArray[np.float64]
-    element_nodes: list[tuple[int, int]] | list[tuple[int, int, int]]
-    boundary_nodes: tuple[int, int]
-    normals: NDArray[np.float64]
-    conditions: tuple[Condition, Condition]
-    mesh_type: int
+    def check_data(self) -> bool:
+        if self.x.shape != (self.n_nodes,):
+            return False
+        if self.element_nodes.shape != (self.n_elements, int(self.mesh_type)):
+            return False
+        if self.boundary_nodes.shape != (2,):
+            return False
+        if self.boundary_element_nodes.shape != (2,):
+            return False
+        if self.normals.shape != (2,):
+            return False
+        if len(self.conditions) != 2:
+            return False
+        if not np.all([isinstance(c, Condition) for c in self.conditions]):
+            return False
+        if not isinstance(self.mesh_type, MeshType):
+            return False
+        return True
 
-    def __repr__(self) -> str:
-        return f"<LineMesh number of elements: {self.n_elements}, boundray condirions: {self.conditions}, mesh type: {self.mesh_type}>"
-
-    def save(self, filename: str | Path) -> None:
+    def save_npz(self, filename: str | Path) -> None:
         """Save the mesh data as an npz file.
 
         Args:
@@ -50,13 +63,14 @@ class LineMesh(NamedTuple):
             x=self.x,
             element_nodes=self.element_nodes,
             boundary_nodes=self.boundary_nodes,
+            boundary_element_nodes=self.boundary_element_nodes,
             normals=self.normals,
             conditions=self.conditions,
             mesh_type=self.mesh_type,
         )
 
     @classmethod
-    def load(cls, filename: str | Path) -> Self:
+    def load_npz(cls, filename: str | Path) -> Self:
         """Load the mesh data as an npz file.
 
         Args:
@@ -72,9 +86,10 @@ class LineMesh(NamedTuple):
             data["x"],
             data["element_nodes"],
             data["boundary_nodes"],
+            data["boundary_element_nodes"],
             data["normals"],
-            data["conditions"],
-            data["mesh_type"],
+            tuple(Condition(c) for c in data["conditions"]),
+            MeshType(data["mesh_type"]),
         )
 
 
@@ -84,7 +99,7 @@ def generate_line_mesh(
     xmax: float,
     cmin: Condition,
     cmax: Condition,
-    mesh_type: int = 2,
+    mesh_type: MeshType = MeshType.FirstOrder,
 ) -> LineMesh:
     """Generate a one-dimensional mesh data.
 
@@ -92,8 +107,8 @@ def generate_line_mesh(
 
     Args:
         n_nodes (int): number of the nodes.
-        xmin (float): minimum value of the analysed interval.
-        xmax (float): maximum value of the analysed interval.
+        xmin (float): minimum value of the analyzed interval.
+        xmax (float): maximum value of the analyzed interval.
         cmin (Condition): boundary condition on xmin.
         cmax (Condition): boundary condition on xmax.
         mesh_type (int, optional): number of nodes per mesh (2 or 3). Defaults to 2.
@@ -110,14 +125,16 @@ def generate_line_mesh(
         n_elements = n_nodes - 1
         element_nodes = [(i, i + 1) for i in range(n_elements)]
     boundary_nodes = (0, n_nodes - 1)
+    boundary_element_nodes = (0, 1)
     normals = np.linspace(-1.0, 1.0, num=2)
     conditions = (cmin, cmax)
     return LineMesh(
         n_nodes,
         n_elements,
         x,
-        element_nodes,
-        boundary_nodes,
+        np.array(element_nodes),
+        np.array(boundary_nodes),
+        np.array(boundary_element_nodes),
         normals,
         conditions,
         mesh_type,
