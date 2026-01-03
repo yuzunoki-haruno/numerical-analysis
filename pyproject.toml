@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "numerical-analysis"
-version = "0.0.2"
+version = "0.0.3"
 description = ""
 authors = [
     {name = "Haruno YUZUNOKI", email = "yuzunoki.haruno@gmail.com"}
