@@ -117,7 +117,7 @@ class LinearProblem1D(Problem):
 
     def formulate(self, fem: Fem1d) -> tuple[lil_matrix, NDArray]:
         coefficient = fem.laplacian_matrix
-        coefficient += -4 * fem.differential_matrix
+        coefficient += -4 * fem.differential_matrices[0]
         coefficient += -8 * fem.term_matrix
         rhs = fem.term(self.f_)
         return coefficient, rhs
@@ -230,8 +230,8 @@ class LinearProblem2D(Problem):
 
     def formulate(self, fem: Fem2d) -> tuple[lil_matrix, NDArray]:
         coefficient = fem.laplacian_matrix
-        coefficient += fem.differential_matrix[0] / 3.0
-        coefficient += fem.differential_matrix[1] / 5.0
+        coefficient += fem.differential_matrices[0] / 3.0
+        coefficient += fem.differential_matrices[1] / 5.0
         rhs = fem.term(self.f_)
         return coefficient, rhs
 
