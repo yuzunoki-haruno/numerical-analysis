@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.0.4 (2026/01/10)
+
+- Implemented the finite element analysis using rectangular elements.
+- Simple refactoring that does not involve interface changes.
+
 ## 0.0.3 (2026/01/03)
 
 - Refactor the Mesh class, the FEM class, example codes, and test codes.

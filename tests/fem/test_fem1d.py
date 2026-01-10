@@ -19,14 +19,13 @@ CONDITIONS_LIST = [
 ]
 
 
-class TestFem1D:
+class TestFem1dFirstOrder:
 
     @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_laplace(self, conditions: list[Condition]) -> None:
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.FirstOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.FirstOrder)
             fem = Fem1d(mesh)
 
             prob = LaplaceProblem1D(mesh)
@@ -36,6 +35,7 @@ class TestFem1D:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.FirstOrder
             assert relative_error < 10 ** (-8)
 
     @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
@@ -43,8 +43,7 @@ class TestFem1D:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.FirstOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.FirstOrder)
             fem = Fem1d(mesh)
 
             prob = PoissonProblem1D(mesh)
@@ -54,6 +53,7 @@ class TestFem1D:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.FirstOrder
             assert relative_error < error_old / 2
             error_old = relative_error
 
@@ -62,8 +62,7 @@ class TestFem1D:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.FirstOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.FirstOrder)
             fem = Fem1d(mesh)
 
             prob = HelmholtzProblem1D(mesh)
@@ -73,6 +72,7 @@ class TestFem1D:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.FirstOrder
             assert relative_error < error_old / 2
             error_old = relative_error
 
@@ -81,8 +81,7 @@ class TestFem1D:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.FirstOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.FirstOrder)
             fem = Fem1d(mesh)
 
             prob = LinearProblem1D(mesh)
@@ -92,18 +91,18 @@ class TestFem1D:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.FirstOrder
             assert relative_error < error_old / 2
             error_old = relative_error
 
 
-class TestFem1DHighOrder:
+class TestFem1dSecondOrder:
 
     @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
     def test_laplace(self, conditions: list[Condition]) -> None:
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.SecondOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.SecondOrder)
             fem = Fem1d(mesh)
 
             prob = LaplaceProblem1D(mesh)
@@ -113,6 +112,7 @@ class TestFem1DHighOrder:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.SecondOrder
             assert relative_error < 10 ** (-8)
 
     @pytest.mark.parametrize("conditions", CONDITIONS_LIST)
@@ -120,8 +120,7 @@ class TestFem1DHighOrder:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.SecondOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.SecondOrder)
             fem = Fem1d(mesh)
 
             prob = PoissonProblem1D(mesh)
@@ -131,6 +130,7 @@ class TestFem1DHighOrder:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.SecondOrder
             assert relative_error < error_old / 2
             error_old = relative_error
 
@@ -139,8 +139,7 @@ class TestFem1DHighOrder:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.SecondOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.SecondOrder)
             fem = Fem1d(mesh)
 
             prob = HelmholtzProblem1D(mesh)
@@ -150,6 +149,7 @@ class TestFem1DHighOrder:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.SecondOrder
             assert relative_error < error_old / 2
             error_old = relative_error
 
@@ -158,8 +158,7 @@ class TestFem1DHighOrder:
         error_old = 1
         for n_nodes in CASES:
             cmin, cmax = conditions
-            mesh_type = MeshType.SecondOrder
-            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, mesh_type)
+            mesh = generate_line_mesh(n_nodes, XMIN, XMAX, cmin, cmax, MeshType.SecondOrder)
             fem = Fem1d(mesh)
 
             prob = LinearProblem1D(mesh)
@@ -169,5 +168,6 @@ class TestFem1DHighOrder:
 
             sol = splu(csc_matrix(coefficient)).solve(rhs)
             relative_error = metrics.relative_error(sol, prob.u)
+            assert mesh.mesh_type == MeshType.SecondOrder
             assert relative_error < error_old / 2
             error_old = relative_error

@@ -20,11 +20,10 @@ MESH_TYPE_LIST = [MeshType.FirstOrder, MeshType.SecondOrder]
 class TestLineMesh:
 
     @pytest.mark.parametrize("conditions", itertools.product(CONDITIONS, repeat=2))
-    def test_init(self, conditions: list[Condition]) -> None:
+    def test_init_first_order(self, conditions: list[Condition]) -> None:
         n_nodes, xmin, xmax = 4, -2.0, 1.0
-        mesh_type = MeshType.FirstOrder
         cmin, cmax = conditions
-        mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type)
+        mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, MeshType.FirstOrder)
         # verifying expectations and values.
         assert mesh.n_nodes == n_nodes
         assert mesh.n_elements == (n_nodes - 1)
@@ -34,16 +33,15 @@ class TestLineMesh:
         np.testing.assert_equal(mesh.boundary_element_nodes, (0, 1))
         np.testing.assert_equal(mesh.normals, (-1, 1))
         np.testing.assert_equal(mesh.conditions, conditions)
-        assert mesh.mesh_type == mesh_type
+        assert mesh.mesh_type == MeshType.FirstOrder and mesh.mesh_type == 2
         assert mesh.x[mesh.boundary_nodes[0]] == xmin
         assert mesh.x[mesh.boundary_nodes[1]] == xmax
 
     @pytest.mark.parametrize("conditions", itertools.product(CONDITIONS, repeat=2))
-    def test_init_high_order(self, conditions: list[Condition]) -> None:
+    def test_init_second_order(self, conditions: list[Condition]) -> None:
         n_nodes, xmin, xmax = 7, -2.0, 4.0
         cmin, cmax = conditions
-        mesh_type = MeshType.SecondOrder
-        mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type=mesh_type)
+        mesh = generate_line_mesh(n_nodes, xmin, xmax, cmin, cmax, mesh_type=MeshType.SecondOrder)
         # verifying expectations and values.
         assert mesh.check_data()
         assert mesh.n_nodes == n_nodes
@@ -54,7 +52,7 @@ class TestLineMesh:
         np.testing.assert_equal(mesh.boundary_element_nodes, (0, 1))
         np.testing.assert_equal(mesh.normals, (-1, 1))
         np.testing.assert_equal(mesh.conditions, conditions)
-        assert mesh.mesh_type == mesh_type
+        assert mesh.mesh_type == MeshType.SecondOrder and mesh.mesh_type == 3
         assert mesh.x[mesh.boundary_nodes[0]] == xmin
         assert mesh.x[mesh.boundary_nodes[1]] == xmax
 

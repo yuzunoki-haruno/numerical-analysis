@@ -144,12 +144,14 @@ def generate_polygon_mesh(
     if mesh_type == MeshType.Triangle:
         n_nodes = n_x * n_y
         n_elements = 2 * m_x * m_y
-        element_nodes = [(i, i + 1, i + n_x + 1) for i in range(n_elements) if (i + 1) % n_x > 0 and i < n_x * m_y]
-        element_nodes += [(i, i + n_x, i + n_x + 1) for i in range(n_elements) if (i + 1) % n_x > 0 and i < n_x * m_y]
-    else:
+        element_nodes = [(i, i + 1, i + n_x + 1) for i in range(n_nodes) if (i + 1) % n_x > 0 and i < n_x * m_y]
+        element_nodes += [(i, i + n_x, i + n_x + 1) for i in range(n_nodes) if (i + 1) % n_x > 0 and i < n_x * m_y]
+    elif mesh_type == MeshType.Rectangle:
         n_nodes = n_x * n_y
         n_elements = m_x * m_y
-        element_nodes = [(i, i + 1, n_x * i, n_x * (i + 1)) for i in range(m_y)]
+        element_nodes = [(i, i + 1, i + n_x + 1, i + n_x) for i in range(n_nodes) if (i + 1) % n_x > 0 and i < n_x * m_y]
+    else:
+        raise ValueError()
     boundary_nodes = list(i for i in range(m_x))
     boundary_nodes.extend(list(n_x * i - 1 for i in range(1, n_y)))
     boundary_nodes.extend(list(i - 1 for i in range(n_nodes, n_nodes - m_x, -1)))
