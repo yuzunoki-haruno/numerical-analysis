@@ -3,7 +3,7 @@ from scipy.sparse.linalg import splu
 
 from example.fem.problem import PoissonProblem2D, LinearProblem2D, LaplaceProblem2D, HelmholtzProblem2D, Problem
 from numerical_analysis.discretization import Condition
-from numerical_analysis.discretization.mesh2d import generate_polygon_mesh
+from numerical_analysis.discretization.mesh2d import MeshType, generate_polygon_mesh
 from numerical_analysis.fem import Fem2d
 from numerical_analysis.util import metrics, vis
 
@@ -25,6 +25,7 @@ def main() -> None:
     parser.add_argument("--condition", type=str, nargs=4, default=("D", "D", "D", "D"), help="Boundary condition.")
     parser.add_argument("--problem", type=str, default="poisson", help="Problem name.")
     parser.add_argument("--output_dir", type=str, default="result_fem2d", help="Path of output directory.")
+    parser.add_argument("--rectangle", action="store_true", help="Use rectangle element.")
     args = parser.parse_args()
 
     problem = str(args.problem).lower()
@@ -35,9 +36,10 @@ def main() -> None:
     c2 = Condition.DIRICHLET if args.condition[1].lower() == "d" else Condition.NEUMANN
     c3 = Condition.DIRICHLET if args.condition[2].lower() == "d" else Condition.NEUMANN
     c4 = Condition.DIRICHLET if args.condition[3].lower() == "d" else Condition.NEUMANN
+    mesh_type = MeshType.Rectangle if args.rectangle else MeshType.Triangle
 
     # mesh generation.
-    mesh = generate_polygon_mesh(args.n_x, args.xmin, args.xmax, args.n_y, args.ymin, args.ymax, c1, c2, c3, c4)
+    mesh = generate_polygon_mesh(args.n_x, args.xmin, args.xmax, args.n_y, args.ymin, args.ymax, c1, c2, c3, c4, mesh_type)
 
     # FEA formulation.
     fem = Fem2d(mesh)

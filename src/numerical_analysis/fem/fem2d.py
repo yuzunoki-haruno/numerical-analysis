@@ -18,6 +18,11 @@ def _det(x: NDArray, y: NDArray) -> np.float64:
     return np.float64(det)
 
 
+def _length(x: NDArray) -> float:
+    xmin, xmax = np.min(x), np.max(x)
+    return float(xmax - xmin)
+
+
 def LAPLACIAN_MATRIX_3X3(x: NDArray, y: NDArray) -> NDArray:
     b = np.roll(y, -1) - np.roll(y, -2)
     c = np.roll(x, -1) - np.roll(x, -2)
@@ -43,6 +48,45 @@ def TERM_MATRIX_3X3(x: NDArray, y: NDArray) -> NDArray:
     return matrix.flatten()
 
 
+def LAPLACIAN_MATRIX_4X4(x: NDArray, y: NDArray) -> NDArray:
+    dx, dy = _length(x), _length(y)
+    xy, yx = dx / dy, dy / dx
+    matrix = np.empty((4, 4))
+    matrix[0] = (xy / 3 + yx / 3, -xy / 3 + yx / 6, -xy / 6 - yx / 6, xy / 6 - yx / 3)
+    matrix[1] = (-xy / 3 + yx / 6, xy / 3 + yx / 3, xy / 6 - yx / 3, -xy / 6 - yx / 6)
+    matrix[2] = (-xy / 6 - yx / 6, xy / 6 - yx / 3, xy / 3 + yx / 3, -xy / 3 + yx / 6)
+    matrix[3] = (xy / 6 - yx / 3, -xy / 6 - yx / 6, -xy / 3 + yx / 6, xy / 3 + yx / 3)
+    return matrix.flatten()
+
+
+def DIFFERENTIAL_MATRICES_4X4(x: NDArray, y: NDArray) -> tuple[NDArray, NDArray]:
+    dx, dy = _length(x), _length(y)
+    matrix_x = np.empty((4, 4))
+    matrix_x[0] = (-1 / 6, 1 / 6, 1 / 12, -1 / 12)
+    matrix_x[1] = (-1 / 6, 1 / 6, 1 / 12, -1 / 12)
+    matrix_x[2] = (-1 / 12, 1 / 12, 1 / 6, -1 / 6)
+    matrix_x[3] = (-1 / 12, 1 / 12, 1 / 6, -1 / 6)
+    matrix_x *= dy
+    matrix_y = np.empty((4, 4))
+    matrix_y[0] = (-1 / 6, -1 / 12, 1 / 12, 1 / 6)
+    matrix_y[1] = (-1 / 12, -1 / 6, 1 / 6, 1 / 12)
+    matrix_y[2] = (-1 / 12, -1 / 6, 1 / 6, 1 / 12)
+    matrix_y[3] = (-1 / 6, -1 / 12, 1 / 12, 1 / 6)
+    matrix_y *= dx
+    return matrix_x.flatten(), matrix_y.flatten()
+
+
+def TERM_MATRIX_4X4(x: NDArray, y: NDArray) -> NDArray:
+    dx, dy = _length(x), _length(y)
+    area = dx * dy
+    matrix = np.empty((4, 4))
+    matrix[0] = (area / 9, area / 18, area / 36, area / 18)
+    matrix[1] = (area / 18, area / 9, area / 18, area / 36)
+    matrix[2] = (area / 36, area / 18, area / 9, area / 18)
+    matrix[3] = (area / 18, area / 36, area / 18, area / 9)
+    return matrix.flatten()
+
+
 class Fem2d(FemBase):
 
     def __init__(self, mesh: PolygonMesh):
@@ -50,7 +94,6 @@ class Fem2d(FemBase):
 
         Using this class, boundary value problems for partial  differential equations can be discretized using the 2D-FEM.
         It can handle both triangle and rectangle elements as input mesh data.
-        (A rectangular element will be implemented in the future).
         """
         super().__init__(mesh.n_nodes, dim=2)
         self.mesh = mesh
@@ -60,8 +103,9 @@ class Fem2d(FemBase):
             local_differential_matrices = DIFFERENTIAL_MATRICES_3X3
             local_term_matrix = TERM_MATRIX_3X3
         else:
-            # TODO: Implementation of rectangular element.
-            pass
+            local_laplacian_matrix = LAPLACIAN_MATRIX_4X4
+            local_differential_matrices = DIFFERENTIAL_MATRICES_4X4
+            local_term_matrix = TERM_MATRIX_4X4
 
         for idx in mesh.element_nodes:
             x = mesh.x[list(idx), 0]
