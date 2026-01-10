@@ -6,51 +6,63 @@ from numerical_analysis.discretization import Condition, LineMesh
 from numerical_analysis.discretization.mesh1d import MeshType
 from numerical_analysis.fem.base import FemBase, implement_dirichlet, update_global_matrix, update_global_matrices
 
-LAPLACIAN_MATRIX_2X2 = np.array((1, -1, -1, 1))
-DIFFERENTIAL_MATRICES_2X2 = (np.array((-1 / 2, 1 / 2, -1 / 2, 1 / 2)),)
-TERM_MATRIX_2X2 = np.array((1 / 3, 1 / 6, 1 / 6, 1 / 3))
 
-LAPLACIAN_MATRIX_3X3 = np.array(
-    (
-        7 / 3,
-        1 / 3,
-        -8 / 3,
-        1 / 3,
-        7 / 3,
-        -8 / 3,
-        -8 / 3,
-        -8 / 3,
-        16 / 3,
-    )
-)
-DIFFERENTIAL_MATRICES_3X3 = (
-    np.array(
-        (
-            -1 / 2,
-            -1 / 6,
-            2 / 3,
-            1 / 6,
-            1 / 2,
-            -2 / 3,
-            -2 / 3,
-            2 / 3,
-            0,
-        )
-    ),
-)
-TERM_MATRIX_3X3 = np.array(
-    (
-        2 / 15,
-        -1 / 30,
-        1 / 15,
-        -1 / 30,
-        2 / 15,
-        1 / 15,
-        1 / 15,
-        1 / 15,
-        8 / 15,
-    )
-)
+def _length(x: NDArray) -> float:
+    xmin, xmax = np.min(x), np.max(x)
+    return float(xmax - xmin)
+
+
+def LAPLACIAN_MATRIX_2X2(x: NDArray) -> NDArray:
+    dx = _length(x)
+    matrix = np.empty((2, 2))
+    matrix[0] = (1, -1)
+    matrix[1] = (-1, 1)
+    matrix /= dx
+    return matrix.flatten()
+
+
+def DIFFERENTIAL_MATRICES_2X2(x: NDArray) -> tuple[NDArray]:
+    matrix = np.empty((2, 2))
+    matrix[0] = (-1 / 2, 1 / 2)
+    matrix[1] = (-1 / 2, 1 / 2)
+    return (matrix.flatten(),)
+
+
+def TERM_MATRIX_2X2(x: NDArray) -> NDArray:
+    dx = _length(x)
+    matrix = np.empty((2, 2))
+    matrix[0] = (1 / 3, 1 / 6)
+    matrix[1] = (1 / 6, 1 / 3)
+    matrix *= dx
+    return matrix.flatten()
+
+
+def LAPLACIAN_MATRIX_3X3(x: NDArray) -> NDArray:
+    dx = _length(x)
+    matrix = np.empty((3, 3))
+    matrix[0] = (7 / 3, 1 / 3, -8 / 3)
+    matrix[1] = (1 / 3, 7 / 3, -8 / 3)
+    matrix[2] = (-8 / 3, -8 / 3, 16 / 3)
+    matrix /= dx
+    return matrix.flatten()
+
+
+def DIFFERENTIAL_MATRICES_3X3(x: NDArray) -> tuple[NDArray]:
+    matrix = np.empty((3, 3))
+    matrix[0] = (-1 / 2, -1 / 6, 2 / 3)
+    matrix[1] = (1 / 6, 1 / 2, -2 / 3)
+    matrix[2] = (-2 / 3, 2 / 3, 0)
+    return (matrix.flatten(),)
+
+
+def TERM_MATRIX_3X3(x: NDArray) -> NDArray:
+    dx = _length(x)
+    matrix = np.empty((3, 3))
+    matrix[0] = (2 / 15, -1 / 30, 1 / 15)
+    matrix[1] = (-1 / 30, 2 / 15, 1 / 15)
+    matrix[2] = (1 / 15, 1 / 15, 8 / 15)
+    matrix *= dx
+    return matrix.flatten()
 
 
 class Fem1d(FemBase):
@@ -82,11 +94,10 @@ class Fem1d(FemBase):
             raise ValueError
 
         for idx in mesh.element_nodes:
-            i, j = idx[0], idx[1]
-            h = mesh.x[j] - mesh.x[i]
-            update_global_matrix(self.laplacian_matrix, idx, local_laplacian_matrix / h)
-            update_global_matrices(self.differential_matrices, idx, local_differential_matrices)
-            update_global_matrix(self.term_matrix, idx, local_term_matrix * h)
+            x = mesh.x[list(idx)]
+            update_global_matrix(self.laplacian_matrix, idx, local_laplacian_matrix(x))
+            update_global_matrices(self.differential_matrices, idx, local_differential_matrices(x))
+            update_global_matrix(self.term_matrix, idx, local_term_matrix(x))
 
     def implement_dirichlet(self, coefficient: lil_matrix, rhs: NDArray, values: NDArray) -> None:
         """Apply the Dirichlet conditions to the coefficient matrix and right-hand side vector.
